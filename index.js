@@ -44,12 +44,14 @@ app.get("/users", async (req, res) => {
   res.send(result);
   // console.log(result, "The all users is...");
 });
-app.get('/users/:id/premium', async(req, res) => {
+app.get("/users/:id/premium", async (req, res) => {
   const id = req.params.id;
-  const query = {_id: new ObjectId(id)};
-  const result = await usersCollection.findOne(query, {projection:{premium: 1}});
+  const query = { _id: new ObjectId(id) };
+  const result = await usersCollection.findOne(query, {
+    projection: { premium: 1 },
+  });
   res.send(result);
-})
+});
 
 // jobs related apis:
 app.post("/jobs", async (req, res) => {
@@ -69,22 +71,17 @@ app.get("/jobs", async (req, res) => {
     if (req.query.category) {
       query.category = req.query.category;
     }
+    if (req.query.recruiterId) {
+      query.recruiterId = req.query.recruiterId;
+    }
 
     // Search filter
     if (req.query.search) {
       query.$or = [
-        {
-          title: { $regex: req.query.search, $options: "i" },
-        },
-        {
-          category: { $regex: req.query.search, $options: "i" },
-        },
-        {
-          description: { $regex: req.query.search, $options: "i" },
-        },
-        {
-          requirements: { $regex: req.query.search, $options: "i" },
-        },
+        { title: { $regex: req.query.search, $options: "i" } },
+        { category: { $regex: req.query.search, $options: "i" } },
+        { description: { $regex: req.query.search, $options: "i" } },
+        { requirements: { $regex: req.query.search, $options: "i" } },
       ];
     }
   }
@@ -127,6 +124,7 @@ app.patch("/jobs/:id", async (req, res) => {
 app.post("/applications", async (req, res) => {
   const data = {
     ...req.body,
+    status: "applied", // recruiter can change it later from the applications page
     dateApplied: new Date().toISOString(),
   };
   const result = await applicationCollection.insertOne(data);
@@ -137,6 +135,11 @@ app.get("/applications", async (req, res) => {
   if (req.query.applicantId) {
     query.userId = req.query.applicantId;
   }
+  // recruiter side: dashboard/recruiter/jobs/[jobId]/applications filters by job
+  if (req.query.jobId) {
+    query.jobId = req.query.jobId;
+  }
+
   const result = await applicationCollection.find(query).toArray();
   res.send(result);
   // console.log(result);
@@ -151,6 +154,17 @@ app.get("/applications/count", async (req, res) => {
   res.send({ count: result });
   console.log(result);
 });
+app.patch('/applications/:id', async(req, res) => {
+  const id = req.params.id
+  const query = {_id: new ObjectId(id)};
+  const updateStatus = {
+    $set:{status: req.body.status}
+  }
+  const result = await applicationCollection.updateOne(query, updateStatus)
+  res.send(result)
+
+  console.log(result, 'update status', query, updateStatus)
+})
 
 // stripe related apis:
 app.post("/payments/payment-verify", async (req, res) => {
