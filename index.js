@@ -52,6 +52,16 @@ app.get("/users/:id/premium", async (req, res) => {
   });
   res.send(result);
 });
+app.patch('/users/:id/role', async(req, res) => {
+  const id = req.params.id;
+  const query = {_id: new ObjectId(id)};
+  const updateUserRole = {
+    $set:{role: req.body.role}
+  }
+  const result = await usersCollection.updateOne(query, updateUserRole)
+  res.send(result)
+  console.log(result, 'the update user role data is')
+})
 
 // jobs related apis:
 app.post("/jobs", async (req, res) => {
